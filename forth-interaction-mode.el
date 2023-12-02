@@ -2,6 +2,7 @@
 
 (require 'comint)
 (require 'forth-mode)
+(require 'ansi-color)
 
 (defvar forth-interaction-buffer nil)
 (defvar forth-interaction-source-buffer nil)
@@ -60,7 +61,10 @@
   (setq forth-interaction-buffer nil))
 
 (defun forth-interaction-sentinel (proc arg)
-  (message "Forth: %s" arg)
+  (when (eq 0 (process-exit-status proc))
+    (with-current-buffer (process-buffer proc)
+      (ansi-color-apply-on-region (point-min) (point-max))
+      (comint-output-filter proc (format "\nForth: %s\n" arg))))
   ;;FIXME: Can't do this because it calls process-mark, which
   ;; errors out in killed processes.  Still, would be nice to see
   ;; something in the *forth* buffer.
@@ -90,8 +94,8 @@
       (set-process-sentinel (get-buffer-process buffer)
 			    'forth-interaction-sentinel)
       (forth-interaction-mode)
-      (add-hook 'comint-preoutput-filter-functions
-		'forth-interaction-preoutput-filter nil t)
+      ;; (add-hook 'comint-preoutput-filter-functions
+      ;;   	'forth-interaction-preoutput-filter nil t)
       (setq forth-interaction-buffer buffer))))
       
 ;;;###autoload
